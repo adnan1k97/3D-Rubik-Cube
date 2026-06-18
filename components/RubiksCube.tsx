@@ -3,6 +3,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { GoogleGenAI } from "@google/genai";
+import { RefreshCcw, Home, Loader2, CheckCircle2 } from 'lucide-react';
+import { useWriteContract, useAccount } from 'wagmi';
+import { waitForTransactionReceipt } from 'wagmi/actions';
+import { config } from '../lib/wagmi';
+import { CUBE_MASTER_ABI, CUBE_MASTER_ADDRESS, FEE_AMOUNT } from '../lib/contract';
 import { 
   Play, 
   RotateCcw, 
@@ -17,7 +22,6 @@ import {
   Trophy,
   ArrowRight,
   Lock,
-  Home,
   Timer,
   Palette,
   X,
@@ -75,6 +79,7 @@ interface RubiksCubeProps {
     initialMode: 'campaign' | 'freeplay';
     startingLevel?: number;
     onHome: () => void;
+    onCompleteLevel?: () => void;
 }
 
 // --- Helper Functions ---
@@ -168,7 +173,7 @@ const formatTime = (ms: number): string => {
 
 // --- Component ---
 
-const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, startingLevel, onHome }) => {
+const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, startingLevel, onHome, onCompleteLevel }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<string>('Ready');
   const [isBusy, setIsBusy] = useState(false);
@@ -178,6 +183,14 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
   const [isMinimized, setIsMinimized] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showScrambleModal, setShowScrambleModal] = useState(false);
+  const [showWinMessage, setShowWinMessage] = useState(false);
+  const [isProcessingReset, setIsProcessingReset] = useState(false);
+  const [isProcessingComplete, setIsProcessingComplete] = useState(false);
+  const [txSuccess, setTxSuccess] = useState<string | null>(null);
+  const { writeContractAsync } = useWriteContract();
+  const { isConnected } = useAccount();
+  const stateRef = useRef<string>("");
+
   const isMountedRef = useRef(true);
   
   // Custom Scramble State
@@ -215,6 +228,39 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
   const moveHistoryRef = useRef<Move[]>([]);
   const isAnimatingRef = useRef(false);
   const materialsRef = useRef<THREE.MeshStandardMaterial[]>([]);
+
+  // Create Web3-wrapped Reset
+  const handleWeb3Reset = async () => {
+      if (CUBE_MASTER_ADDRESS === "0x0000000000000000000000000000000000000000") {
+          console.warn("Dev Mode: Bypassing Web3 Reset");
+          resetCube();
+          return;
+      }
+      if (!isConnected) {
+          alert("Please connect your wallet first!");
+          return;
+      }
+
+      try {
+          setIsProcessingReset(true);
+          const hash = await writeContractAsync({
+              address: CUBE_MASTER_ADDRESS,
+              abi: CUBE_MASTER_ABI,
+              functionName: 'resetLevel',
+              value: FEE_AMOUNT,
+          });
+          await waitForTransactionReceipt(config, { hash });
+          
+          setTxSuccess("Reset Successful!");
+          setTimeout(() => setTxSuccess(null), 3000);
+          
+          resetCube();
+      } catch (error) {
+          console.error("Reset TX failed", error);
+      } finally {
+          setIsProcessingReset(false);
+      }
+  };
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -612,6 +658,36 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
                 setLevelComplete(true);
                 setLevelStarted(false);
                 setToast(`Level ${currentLevel} Complete!`);
+                
+                // Trigger Web3 Complete Level
+                setTimeout(async () => {
+                    if (CUBE_MASTER_ADDRESS === "0x0000000000000000000000000000000000000000" || !isConnected) {
+                        console.warn("Dev Mode: Bypassing Web3 Complete");
+                        if (onCompleteLevel) onCompleteLevel();
+                        return;
+                    }
+
+                    try {
+                        setIsProcessingComplete(true);
+                        const hash = await writeContractAsync({
+                            address: CUBE_MASTER_ADDRESS,
+                            abi: CUBE_MASTER_ABI,
+                            functionName: 'completeLevel',
+                            value: FEE_AMOUNT,
+                        });
+                        await waitForTransactionReceipt(config, { hash });
+                        
+                        setTxSuccess("Level Completed Successfully!");
+                        setTimeout(() => setTxSuccess(null), 3000);
+                        
+                        if (onCompleteLevel) onCompleteLevel();
+                    } catch (error) {
+                        console.error("Complete Level TX failed", error);
+                    } finally {
+                        setIsProcessingComplete(false);
+                    }
+                }, 1000);
+
                 if (currentLevel === maxLevelReached && currentLevel < MAX_LEVELS) {
                     const nextMax = currentLevel + 1;
                     setMaxLevelReached(nextMax);
@@ -625,7 +701,7 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
 
     isAnimatingRef.current = false;
     if (duration > 0 && setBusy) setIsBusy(false); 
-  }, [triggerHighlight, checkSolved, isLevelMode, levelStarted, currentLevel, maxLevelReached, moveCount, isTimerRunning]);
+  }, [triggerHighlight, checkSolved, isLevelMode, levelStarted, currentLevel, maxLevelReached, moveCount, isTimerRunning, writeContractAsync, onCompleteLevel]);
 
   // --- Reset & Initialization Logic ---
   
@@ -710,7 +786,6 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
   }, [resetPhysicalCube, rotateLayer, checkSolved]);
 
   // When entering game mode, sync internal state
-  // Removed rotateLayer and resetPhysicalCube from deps to prevent infinite reset loops on move
   useEffect(() => {
     if (isGameActive) {
         const targetLevelMode = initialMode === 'campaign';
@@ -768,8 +843,7 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
              }
         }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGameActive, initialMode, startingLevel]);
+  }, [isGameActive, initialMode, startingLevel, rotateLayer, resetPhysicalCube]);
   
   useEffect(() => {
       hasAutoStartedRef.current = false;
@@ -1196,9 +1270,9 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
       
       try {
           const state = getCubeState();
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
           const response = await ai.models.generateContent({
-              model: 'gemini-3-flash-preview',
+              model: 'gemini-1.5-flash',
               contents: `You are a Rubik's cube solver. Current state (U R F D L B order): ${state}. What is the single next move to progress solving? standard notation (e.g. R, U', F2). Output JSON: {"nextMove": "R"}`,
               config: {
                 responseMimeType: "application/json"
@@ -1237,6 +1311,31 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
 
   return (
     <div className="relative w-full h-full font-sans select-none">
+      {/* Web3 Processing Overlay */}
+      {(isProcessingReset || isProcessingComplete) && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto">
+          <div className="bg-white/10 border border-white/20 p-8 rounded-2xl flex flex-col items-center gap-4 shadow-2xl">
+            <Loader2 size={48} className="animate-spin text-blue-400" />
+            <h2 className="text-2xl font-bold text-white tracking-wider">
+               {isProcessingReset ? "PROCESSING RESET..." : "CLAIMING VICTORY..."}
+            </h2>
+            <p className="text-white/60 text-sm max-w-xs text-center">
+              Please confirm the transaction in your wallet to continue.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Web3 Success Overlay */}
+      {txSuccess && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="bg-green-500/20 border border-green-500 p-4 rounded-xl flex items-center gap-3 backdrop-blur-md shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+             <CheckCircle2 className="text-green-400" size={24} />
+             <span className="text-green-400 font-bold tracking-wide">{txSuccess}</span>
+          </div>
+        </div>
+      )}
+
       <div 
         ref={containerRef} 
         className="w-full h-full absolute top-0 left-0 z-0 touch-none" 
@@ -1405,6 +1504,14 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
                     title="Return to Menu"
                  >
                      <Home size={18} />
+                 </button>
+                 <button 
+                    onClick={handleWeb3Reset}
+                    disabled={isProcessingReset}
+                    className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                    title="Reset Cube (Fee: $0.01)"
+                 >
+                     <RefreshCcw size={18} />
                  </button>
                  <button 
                     onClick={() => setShowSettings(true)} 

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Play, Box, Trophy, Grid3X3, ArrowRight } from 'lucide-react';
+import { Trophy, Grid3X3, Pin } from 'lucide-react';
+import { Wallet, ConnectWallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
+import { Address, Avatar, Name, Identity } from '@coinbase/onchainkit/identity';
 
 interface LandingPageProps {
   onStartCampaign: () => void;
@@ -11,116 +13,106 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartCampaign, onStartSimul
   return (
     <div 
       className={`
-        absolute inset-0 z-50 flex flex-col items-center justify-center 
+        absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden
         transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)]
-        ${visible ? 'opacity-100 backdrop-blur-md bg-black/40' : 'opacity-0 pointer-events-none backdrop-blur-none bg-transparent'}
+        ${visible ? 'opacity-100 backdrop-blur-2xl bg-black/40' : 'opacity-0 pointer-events-none backdrop-blur-none bg-transparent'}
       `}
     >
+      {/* Vibrant Background Orbs representing Rubik's Cube Colors */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+         <div className="absolute top-[10%] left-[10%] w-96 h-96 bg-[#b90000]/30 rounded-full blur-[100px] animate-pulse" />
+         <div className="absolute top-[30%] right-[5%] w-[35rem] h-[35rem] bg-[#0045ad]/30 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+         <div className="absolute bottom-[5%] left-[20%] w-[30rem] h-[30rem] bg-[#ffd500]/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+         <div className="absolute bottom-[20%] right-[20%] w-80 h-80 bg-[#009e60]/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1.5s' }} />
+         <div className="absolute -top-[5%] right-[30%] w-96 h-96 bg-[#ff5900]/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '0.5s' }} />
+      </div>
+
       <div className={`
-         relative z-10 w-full max-w-5xl px-6 md:px-12
-         flex flex-col md:flex-row items-center md:items-stretch justify-center gap-12 md:gap-8
+         relative z-10 w-full max-w-5xl px-4 md:px-12
+         flex flex-col items-center justify-center gap-16
          transition-all duration-1000 delay-100 transform
-         ${visible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}
+         ${visible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-95'}
       `}>
         
-        {/* Left Section: Title & Intro */}
-        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-6 pt-4 md:pt-0">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono tracking-widest text-blue-400 uppercase mb-2 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                v2.0 System Ready
-            </div>
-            
-            <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-[0.9]">
-                CUBE <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">MASTER</span>
-            </h1>
-            
-            <p className="text-lg text-white/60 max-w-md font-light leading-relaxed">
-                Experience the ultimate 3D puzzle simulator. Master algorithms, solve puzzles, or challenge yourself in campaign mode.
-            </p>
-
-            <div className="hidden md:flex items-center gap-6 text-xs font-mono text-white/30 pt-8">
-                <div className="flex items-center gap-2">
-                    <Box size={14} /> <span>WebGL Powered</span>
+        {/* Title */}
+        <div className="flex flex-col items-center text-center mt-8">
+            {/* 3D Rubik's Cube Theme Letters */}
+            <div className="flex gap-3 md:gap-5 mb-2">
+                <div className="w-20 h-20 md:w-32 md:h-32 bg-[#b90000] rounded-2xl border-4 md:border-8 border-[#111] shadow-[inset_0_0_20px_rgba(0,0,0,0.6),0_15px_30px_rgba(185,0,0,0.5)] flex items-center justify-center transform -rotate-6 hover:rotate-0 hover:scale-110 transition-all duration-300">
+                    <span className="text-5xl md:text-7xl font-black text-white drop-shadow-lg">C</span>
                 </div>
-                 <div className="w-px h-4 bg-white/10" />
-                <div className="flex items-center gap-2">
-                    <Play size={14} /> <span>Interactive</span>
+                <div className="w-20 h-20 md:w-32 md:h-32 bg-[#0045ad] rounded-2xl border-4 md:border-8 border-[#111] shadow-[inset_0_0_20px_rgba(0,0,0,0.6),0_15px_30px_rgba(0,69,173,0.5)] flex items-center justify-center transform translate-y-4 hover:translate-y-0 hover:scale-110 transition-all duration-300">
+                    <span className="text-5xl md:text-7xl font-black text-white drop-shadow-lg">U</span>
+                </div>
+                <div className="w-20 h-20 md:w-32 md:h-32 bg-[#ffd500] rounded-2xl border-4 md:border-8 border-[#111] shadow-[inset_0_0_20px_rgba(0,0,0,0.4),0_15px_30px_rgba(255,213,0,0.5)] flex items-center justify-center transform rotate-6 hover:rotate-0 hover:scale-110 transition-all duration-300">
+                    <span className="text-5xl md:text-7xl font-black text-black drop-shadow-md">B</span>
+                </div>
+                <div className="w-20 h-20 md:w-32 md:h-32 bg-[#009e60] rounded-2xl border-4 md:border-8 border-[#111] shadow-[inset_0_0_20px_rgba(0,0,0,0.6),0_15px_30px_rgba(0,158,96,0.5)] flex items-center justify-center transform -translate-y-2 hover:translate-y-0 hover:scale-110 transition-all duration-300">
+                    <span className="text-5xl md:text-7xl font-black text-white drop-shadow-lg">E</span>
                 </div>
             </div>
+            <h2 className="text-3xl md:text-5xl font-black mt-8 text-white tracking-[0.4em] uppercase drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                MASTER
+            </h2>
         </div>
 
-        {/* Right Section: Mode Selection Cards */}
-        <div className="flex-1 w-full max-w-sm md:max-w-none flex flex-col gap-4">
+        {/* Buttons */}
+        <div className="w-full max-w-lg flex flex-col gap-6 px-4">
             
             {/* Campaign Card */}
             <button 
                 onClick={onStartCampaign}
-                className="group relative w-full bg-[#111]/80 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 rounded-2xl p-1 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-blue-900/20"
+                className="group relative w-full rounded-3xl p-1 overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_50px_rgba(255,89,0,0.5)] cursor-pointer"
             >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-blue-600/5 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#b90000] via-[#ff5900] to-[#ffd500] opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
                 
-                <div className="relative flex items-center gap-5 p-5 bg-[#0a0a0a]/50 rounded-xl h-full">
-                    <div className="w-14 h-14 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
-                        <Trophy size={26} />
-                    </div>
-                    
-                    <div className="flex-1 text-left">
-                        <h3 className="text-lg font-bold text-white group-hover:text-blue-300 transition-colors flex items-center gap-2">
-                            Campaign Mode 
-                            <ArrowRight size={14} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-blue-400" />
-                        </h3>
-                        <p className="text-xs text-white/40 mt-1 font-medium">20 Levels • Progression System</p>
-                    </div>
+                <div className="relative flex items-center justify-center gap-5 p-6 md:p-8 bg-black/90 backdrop-blur-2xl rounded-[1.35rem] h-full group-hover:bg-black/70 transition-colors">
+                    <Trophy size={32} className="text-[#ffd500] group-hover:scale-125 transition-transform duration-300 drop-shadow-[0_0_15px_rgba(255,213,0,0.6)]" />
+                    <span className="text-xl md:text-2xl font-black text-white uppercase tracking-widest drop-shadow-md">
+                        Campaign Mode 
+                    </span>
                 </div>
             </button>
 
             {/* Freeplay Card */}
             <button 
                 onClick={onStartSimulator}
-                className="group relative w-full bg-[#111]/80 backdrop-blur-xl border border-white/10 hover:border-emerald-500/50 rounded-2xl p-1 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-900/20"
+                className="group relative w-full rounded-3xl p-1 overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_50px_rgba(0,69,173,0.5)] cursor-pointer"
             >
-                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/0 via-emerald-600/5 to-emerald-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                 <div className="absolute inset-0 bg-gradient-to-br from-[#0045ad] via-[#009e60] to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
                 
-                <div className="relative flex items-center gap-5 p-5 bg-[#0a0a0a]/50 rounded-xl h-full">
-                    <div className="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
-                        <Grid3X3 size={26} />
-                    </div>
-                    
-                    <div className="flex-1 text-left">
-                        <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                            Free Simulator
-                             <ArrowRight size={14} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-emerald-400" />
-                        </h3>
-                        <p className="text-xs text-white/40 mt-1 font-medium">Infinite Shuffle • Speed Timer</p>
-                    </div>
+                <div className="relative flex items-center justify-center gap-5 p-6 md:p-8 bg-black/90 backdrop-blur-2xl rounded-[1.35rem] h-full group-hover:bg-black/70 transition-colors">
+                    <Grid3X3 size={32} className="text-cyan-400 group-hover:scale-125 group-hover:rotate-90 transition-transform duration-500 drop-shadow-[0_0_15px_rgba(34,211,238,0.6)]" />
+                    <span className="text-xl md:text-2xl font-black text-white uppercase tracking-widest drop-shadow-md">
+                        Free Simulator
+                    </span>
                 </div>
             </button>
             
-            {/* Quick Tip or Stat */}
-             <div className="mt-2 px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-center md:text-left">
-                <p className="text-[10px] text-white/30 font-mono uppercase tracking-wider mb-1">Daily Tip</p>
-                <p className="text-xs text-white/60">Practice orienting corners first to improve speed.</p>
+            {/* Wallet Connect Bar */}
+            <div className="mt-4 flex flex-col items-center gap-4 w-full">
+               <Wallet>
+                 <ConnectWallet text="Connect Wallet" className="w-full max-w-[240px] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl py-3 px-6 transition-colors shadow-[0_0_15px_rgba(37,99,235,0.5)]">
+                    <Avatar className="h-6 w-6" />
+                    <Name />
+                 </ConnectWallet>
+                 <WalletDropdown>
+                   <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                     <Avatar />
+                     <Name />
+                     <Address />
+                   </Identity>
+                   <WalletDropdownDisconnect />
+                 </WalletDropdown>
+               </Wallet>
+
+               <div className="flex items-center gap-2 text-white/70 text-xs font-medium bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
+                   <Pin size={14} className="text-blue-400" />
+                   <span>Tip: Pin this app in your Base/Coinbase Wallet for easy access!</span>
+               </div>
             </div>
 
         </div>
-      </div>
-      
-      {/* Decorative footer */}
-      <div className={`
-        absolute bottom-0 w-full p-6 flex justify-between items-end pointer-events-none
-        transition-all duration-1000 delay-300
-        ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-      `}>
-          <div className="text-[10px] font-mono text-white/20">
-             SYSTEM_ID: RBC-3D<br/>
-             RENDER: THREE.JS
-          </div>
-          <div className="h-px w-32 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-          <div className="text-[10px] font-mono text-white/20 text-right">
-             V 1.2.0<br/>
-             STABLE
-          </div>
       </div>
     </div>
   );

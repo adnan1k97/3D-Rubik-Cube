@@ -9,15 +9,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@coinbase/onchainkit": "^1.1.2",
     "@google/genai": "0.2.0",
+    "@tanstack/react-query": "^5.101.0",
     "lucide-react": "^1.20.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "three": "0.160.0"
+    "three": "0.160.0",
+    "viem": "^2.52.2",
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "hardhat": "^2.21.0",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
