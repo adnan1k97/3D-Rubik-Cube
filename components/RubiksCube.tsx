@@ -843,7 +843,8 @@ const RubiksCube: React.FC<RubiksCubeProps> = ({ isGameActive, initialMode, star
              }
         }
     }
-  }, [isGameActive, initialMode, startingLevel, rotateLayer, resetPhysicalCube]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGameActive, initialMode, startingLevel]);
   
   useEffect(() => {
       hasAutoStartedRef.current = false;
